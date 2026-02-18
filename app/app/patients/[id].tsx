@@ -1,11 +1,9 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { generateDietPlan } from '../../../../src/core/diet/dietEngine';
-import { exportDietPdf } from '../../../../src/core/diet/pdf';
-import type { MetabolicOutput, MetabolicInput } from '../../../../src/core/metabolic/types';
+// import computeMetabolicPlan if needed in the future
+import { generateDietPlan } from '../../../src/core/diet/dietEngine';
+import { exportDietPdf } from '../../../src/core/diet/pdf';
+import type { MetabolicOutput, MetabolicInput } from '../../../src/core/metabolic/types';
 
 /*
  * Página de detalhes de um paciente (/app/patients/[id]).
@@ -107,13 +105,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-2xl mb-2">Paciente: {patient.name}</h1>
-      {/* Links para navegação */}
-      <div className="flex gap-4 text-white/80 mb-4">
-        <Link className="hover:text-white" href={`/app/patients/${id}/perfil`}>Perfil</Link>
-        <Link className="hover:text-white" href={`/app/patients/${id}/metas`}>Metas</Link>
-        {/* outros links podem ser adicionados aqui */}
-      </div>
+      <h1 className="text-2xl mb-4">Paciente: {patient.name}</h1>
       {/* Dados básicos */}
       <div className="mb-4">
         <h2 className="text-xl">Dados</h2>

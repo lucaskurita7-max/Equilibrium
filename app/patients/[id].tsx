@@ -1,16 +1,16 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { generateDietPlan } from '../../../../src/core/diet/dietEngine';
-import { exportDietPdf } from '../../../../src/core/diet/pdf';
-import type { MetabolicOutput, MetabolicInput } from '../../../../src/core/metabolic/types';
+import { useRouter } from 'next/router';
+import { generateDietPlan } from '../../src/core/diet/dietEngine';
+import { exportDietPdf } from '../../src/core/diet/pdf';
+import type { MetabolicOutput, MetabolicInput } from '../../src/core/metabolic/types';
 
 /*
- * Página de detalhes de um paciente (/app/patients/[id]).
- * Verifica sessão e permissão multi‑tenant antes de exibir dados. Lê
- * informações do localStorage e permite gerar dieta e exportar PDF.
+ * Página de detalhes de paciente (versão simples fora da área /app).
+ * Esta implementação utiliza localStorage para armazenar pacientes e
+ * respeita a sessão eq_session para aplicar multi‑tenant. Se o
+ * usuário não tiver permissão para visualizar o paciente, redireciona
+ * para a lista. É recomendável utilizar a rota /app/patients/[id] para
+ * a versão principal da aplicação.
  */
 
 interface StoredPatient {
@@ -19,23 +19,22 @@ interface StoredPatient {
   input: MetabolicInput;
   metabolic: MetabolicOutput;
   diet?: any;
-  tenantId: string;
+  tenantId?: string;
 }
 
-function getSession(): { role: string; tenantId: string } | null {
+function getSession() {
   if (typeof window === 'undefined') return null;
   const data = localStorage.getItem('eq_session');
   return data ? JSON.parse(data) : null;
 }
 
-export default function PatientDetailPage({ params }: { params: { id: string } }) {
+export default function PatientDetailPage() {
   const router = useRouter();
-  const { id } = params;
+  const { id } = router.query as { id?: string };
   const [patient, setPatient] = useState<StoredPatient | null>(null);
   const [dietPlan, setDietPlan] = useState<any | null>(null);
   const [pdfLink, setPdfLink] = useState<string | null>(null);
 
-  // Carrega dados do paciente do localStorage e verifica permissão
   useEffect(() => {
     const session = getSession();
     if (!session) {
@@ -48,24 +47,20 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
       const list: StoredPatient[] = JSON.parse(data);
       const found = list.find(p => p.id === Number(id));
       if (found) {
-        // Verifica se o usuário tem permissão para visualizar
-        if (session.role !== 'admin' && found.tenantId !== session.tenantId) {
-          // Redireciona para lista se não puder ver
+        if (session.role !== 'admin' && found.tenantId && found.tenantId !== session.tenantId) {
           router.push('/app/patients');
           return;
         }
         setPatient(found);
-        if ((found as any).diet) {
-          setDietPlan((found as any).diet);
+        if (found.diet) {
+          setDietPlan(found.diet);
         }
       } else {
-        // Se não encontrar paciente, volta para lista
         router.push('/app/patients');
       }
     }
-  }, [id, router]);
+  }, [id]);
 
-  // Gera dieta e salva no localStorage
   const handleGenerateDiet = () => {
     if (!patient) return;
     const plan = generateDietPlan(patient.metabolic);
@@ -81,7 +76,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
     }
   };
 
-  // Exporta PDF
   const handleExportPdf = async () => {
     if (!patient || !dietPlan) return;
     const patientInfo = {
@@ -107,14 +101,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-2xl mb-2">Paciente: {patient.name}</h1>
-      {/* Links para navegação */}
-      <div className="flex gap-4 text-white/80 mb-4">
-        <Link className="hover:text-white" href={`/app/patients/${id}/perfil`}>Perfil</Link>
-        <Link className="hover:text-white" href={`/app/patients/${id}/metas`}>Metas</Link>
-        {/* outros links podem ser adicionados aqui */}
-      </div>
-      {/* Dados básicos */}
+      <h1 className="text-2xl mb-4">Paciente: {patient.name}</h1>
       <div className="mb-4">
         <h2 className="text-xl">Dados</h2>
         <p>ID: {patient.id}</p>
@@ -124,7 +111,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
         <p>Nível de atividade: {patient.input.nivelAtividade}</p>
         <p>Esporte: {patient.input.sport}</p>
       </div>
-      {/* Resultado metabólico */}
       <div className="mb-4">
         <h2 className="text-xl">Resultado Metabólico</h2>
         <p>Metodologia: {patient.metabolic.bmrMethod}</p>
@@ -143,7 +129,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
           </div>
         )}
       </div>
-      {/* Botões de ação */}
       <div className="mb-4 space-x-4">
         <button onClick={handleGenerateDiet} className="bg-blue-600 hover:bg-blue-700 p-2 rounded">
           Gerar Dieta
@@ -161,7 +146,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
           </a>
         )}
       </div>
-      {/* Exibe plano de dieta */}
       {dietPlan && (
         <div>
           <h2 className="text-xl mb-2">Plano de Dieta</h2>
