@@ -6,7 +6,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getPatientById, updatePatient } from "@/lib/storage";
+// Importa funções de armazenamento usando caminho relativo, pois não há alias configurado.
+import { getPatientById, updatePatient } from "../../../../../lib/storage";
 
 export default function PerfilPage({ params }: { params: { id: string } }) {
   const id = params.id;
